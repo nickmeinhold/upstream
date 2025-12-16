@@ -105,6 +105,7 @@ class UpstreamServer {
       handler = const Pipeline()
           .addMiddleware(logRequests())
           .addMiddleware(corsHeaders())
+          .addMiddleware(_wasmHeaders())
           .addHandler((Request request) async {
             // Try API first
             if (request.url.path.startsWith('api/') ||
@@ -122,6 +123,19 @@ class UpstreamServer {
 
     // Test connections
     await _testConnections();
+  }
+
+  /// Middleware to add headers required for WASM multi-threading support
+  Middleware _wasmHeaders() {
+    return (Handler innerHandler) {
+      return (Request request) async {
+        final response = await innerHandler(request);
+        return response.change(headers: {
+          'Cross-Origin-Embedder-Policy': 'credentialless',
+          'Cross-Origin-Opener-Policy': 'same-origin',
+        });
+      };
+    };
   }
 
   Future<void> _testConnections() async {
