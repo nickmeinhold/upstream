@@ -19,6 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _contentType = 'all'; // 'all', 'movie', 'tv'
   String _timeWindow = 'week'; // 'day', 'week'
   int _days = 30;
+  double _minRating = 6.0; // Default: filter out low-rated content
+  int _minVotes = 50; // Default: filter out obscure content
   List<dynamic> _items = [];
   bool _isLoading = false;
   String? _error;
@@ -40,39 +42,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startProgressPolling() {
-    // Poll every second to pick up new downloads and update progress
-    _progressTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!_isLoading) {
-        _refreshProgress();
+    // Poll every 2 seconds for download progress only
+    _progressTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!_isLoading && _items.isNotEmpty) {
+        _refreshDownloadProgress();
       }
     });
   }
 
-  Future<void> _refreshProgress() async {
-    // Silent refresh - don't show loading indicator
+  Future<void> _refreshDownloadProgress() async {
+    // Only fetch active torrents, don't re-fetch content from TMDB
     try {
       final api = context.read<ApiService>();
-      List<dynamic> items;
+      final torrents = await api.getActiveTorrents();
 
-      switch (_selectedIndex) {
-        case 0:
-          items = await api.getNewReleases(
-            type: _contentType == 'all' ? null : _contentType,
-            days: _days,
-          );
-          break;
-        case 1:
-          items = await api.getTrending(
-            window: _timeWindow,
-            type: _contentType == 'all' ? null : _contentType,
-          );
-          break;
-        default:
-          return; // Don't refresh search results
+      if (!mounted || torrents.isEmpty) return;
+
+      // Build lookup by name for fuzzy matching
+      bool hasChanges = false;
+      for (final item in _items) {
+        final title = (item['title'] as String? ?? '').toLowerCase();
+        final year = item['year'] as String? ?? '';
+
+        for (final torrent in torrents) {
+          final torrentName = (torrent['name'] as String? ?? '').toLowerCase();
+          // Simple fuzzy match: torrent name contains title
+          if (torrentName.contains(title) &&
+              (year.isEmpty || torrentName.contains(year))) {
+            final newProgress = torrent['percentDone'] as double?;
+            if (item['percentDone'] != newProgress) {
+              item['percentDone'] = newProgress;
+              item['downloadStatus'] = torrent['statusText'];
+              hasChanges = true;
+            }
+            break;
+          }
+        }
       }
 
-      if (mounted) {
-        setState(() => _items = items);
+      if (hasChanges && mounted) {
+        setState(() {});
       }
     } catch (_) {
       // Silent fail for background refresh
@@ -94,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
           items = await api.getNewReleases(
             type: _contentType == 'all' ? null : _contentType,
             days: _days,
+            minRating: _minRating,
+            minVotes: _minVotes,
           );
           break;
         case 1: // Trending
@@ -285,12 +296,35 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
           ],
           const Spacer(),
+          if (_selectedIndex == 0)
+            IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'Quality filters',
+              onPressed: _showFilterSettings,
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: _loadContent,
           ),
         ],
+      ),
+    );
+  }
+
+  void _showFilterSettings() {
+    showDialog(
+      context: context,
+      builder: (context) => _FilterSettingsDialog(
+        minRating: _minRating,
+        minVotes: _minVotes,
+        onSave: (rating, votes) {
+          setState(() {
+            _minRating = rating;
+            _minVotes = votes;
+          });
+          _loadContent();
+        },
       ),
     );
   }
@@ -356,6 +390,94 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, scrollController) =>
             DownloadsPanel(scrollController: scrollController),
       ),
+    );
+  }
+}
+
+class _FilterSettingsDialog extends StatefulWidget {
+  final double minRating;
+  final int minVotes;
+  final void Function(double rating, int votes) onSave;
+
+  const _FilterSettingsDialog({
+    required this.minRating,
+    required this.minVotes,
+    required this.onSave,
+  });
+
+  @override
+  State<_FilterSettingsDialog> createState() => _FilterSettingsDialogState();
+}
+
+class _FilterSettingsDialogState extends State<_FilterSettingsDialog> {
+  late double _rating;
+  late int _votes;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.minRating;
+    _votes = widget.minVotes;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Quality Filters'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Minimum Rating: ${_rating.toStringAsFixed(1)}'),
+          Slider(
+            value: _rating,
+            min: 0,
+            max: 9,
+            divisions: 18,
+            label: _rating.toStringAsFixed(1),
+            onChanged: (value) => setState(() => _rating = value),
+          ),
+          const SizedBox(height: 16),
+          Text('Minimum Votes: $_votes'),
+          Slider(
+            value: _votes.toDouble(),
+            min: 0,
+            max: 500,
+            divisions: 10,
+            label: _votes.toString(),
+            onChanged: (value) => setState(() => _votes = value.round()),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Higher values filter out more obscure and low-quality content.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _rating = 0;
+              _votes = 0;
+            });
+          },
+          child: const Text('Show All'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            widget.onSave(_rating, _votes);
+            Navigator.of(context).pop();
+          },
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

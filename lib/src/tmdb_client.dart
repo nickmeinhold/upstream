@@ -30,6 +30,8 @@ class TmdbClient {
     List<int>? providerIds,
     String? releaseDateGte,
     String? releaseDateLte,
+    double? minRating,
+    int? minVotes,
     int page = 1,
   }) async {
     final params = <String, String>{
@@ -43,6 +45,8 @@ class TmdbClient {
     }
     if (releaseDateGte != null) params['release_date.gte'] = releaseDateGte;
     if (releaseDateLte != null) params['release_date.lte'] = releaseDateLte;
+    if (minRating != null) params['vote_average.gte'] = minRating.toString();
+    if (minVotes != null) params['vote_count.gte'] = minVotes.toString();
 
     final data = await _get('/discover/movie', params);
     final results = data['results'] as List<dynamic>;
@@ -55,6 +59,8 @@ class TmdbClient {
     List<int>? providerIds,
     String? airDateGte,
     String? airDateLte,
+    double? minRating,
+    int? minVotes,
     int page = 1,
   }) async {
     final params = <String, String>{
@@ -68,6 +74,8 @@ class TmdbClient {
     }
     if (airDateGte != null) params['first_air_date.gte'] = airDateGte;
     if (airDateLte != null) params['first_air_date.lte'] = airDateLte;
+    if (minRating != null) params['vote_average.gte'] = minRating.toString();
+    if (minVotes != null) params['vote_count.gte'] = minVotes.toString();
 
     final data = await _get('/discover/tv', params);
     final results = data['results'] as List<dynamic>;

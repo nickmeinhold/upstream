@@ -5,11 +5,15 @@ import '../services/api_service.dart';
 class TorrentSearchDialog extends StatefulWidget {
   final String initialQuery;
   final String? expectedYear;
+  final int? tmdbId;
+  final String? mediaType;
 
   const TorrentSearchDialog({
     super.key,
     required this.initialQuery,
     this.expectedYear,
+    this.tmdbId,
+    this.mediaType,
   });
 
   @override
@@ -105,7 +109,11 @@ class _TorrentSearchDialogState extends State<TorrentSearchDialog> {
 
     try {
       final api = context.read<ApiService>();
-      await api.downloadTorrent(url as String);
+      await api.downloadTorrent(
+        url as String,
+        tmdbId: widget.tmdbId,
+        mediaType: widget.mediaType,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

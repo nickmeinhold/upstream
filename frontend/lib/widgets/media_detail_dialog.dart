@@ -77,6 +77,8 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
   void _showTorrentSearch() {
     final title = widget.item['title'] as String;
     final year = widget.item['year'] as String? ?? '';
+    final tmdbId = widget.item['id'] as int?;
+    final mediaType = widget.item['mediaType'] as String?;
 
     Navigator.of(context).pop();
 
@@ -86,6 +88,8 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
       builder: (context) => TorrentSearchDialog(
         initialQuery: title,
         expectedYear: year.isNotEmpty ? year : null,
+        tmdbId: tmdbId,
+        mediaType: mediaType,
       ),
     );
   }

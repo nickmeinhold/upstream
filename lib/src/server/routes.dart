@@ -7,6 +7,7 @@ import '../services/transmission_client.dart';
 import '../services/jackett_client.dart';
 import '../services/omdb_client.dart';
 import '../services/user_service.dart';
+import '../services/download_mapping.dart';
 import '../watch_history.dart';
 import '../tmdb_client.dart';
 import '../providers.dart';
@@ -18,6 +19,7 @@ class ApiRoutes {
   final OmdbClient? omdb;
   final UserService userService;
   final WatchHistory watchHistory;
+  final DownloadMapping downloadMapping;
   final String jwtSecret;
 
   ApiRoutes({
@@ -27,6 +29,7 @@ class ApiRoutes {
     this.omdb,
     required this.userService,
     required this.watchHistory,
+    required this.downloadMapping,
     required this.jwtSecret,
   });
 
@@ -147,6 +150,9 @@ class ApiRoutes {
     final providerKeys = params['providers']?.split(',').where((k) => k.isNotEmpty).toList() ?? [];
     final type = params['type']; // 'movie', 'tv', or null for both
     final days = int.tryParse(params['days'] ?? '30') ?? 30;
+    // Rating filters - defaults filter out low quality content
+    final minRating = double.tryParse(params['minRating'] ?? '6.0');
+    final minVotes = int.tryParse(params['minVotes'] ?? '50');
 
     // Only filter by provider if explicitly specified - otherwise get all releases
     final providerIds = providerKeys.isNotEmpty
@@ -168,6 +174,8 @@ class ApiRoutes {
           providerIds: providerIds,
           releaseDateGte: startStr,
           releaseDateLte: endStr,
+          minRating: minRating,
+          minVotes: minVotes,
           page: page,
         );
         if (movies.isEmpty) break; // No more results
@@ -186,6 +194,8 @@ class ApiRoutes {
           providerIds: providerIds,
           airDateGte: startStr,
           airDateLte: endStr,
+          minRating: minRating,
+          minVotes: minVotes,
           page: page,
         );
         if (tv.isEmpty) break; // No more results
@@ -401,8 +411,19 @@ class ApiRoutes {
       return _jsonError(400, 'URL or magnet link required');
     }
 
+    // Optional TMDB reference for tracking
+    final tmdbId = body['tmdbId'] as int?;
+    final mediaType = body['mediaType'] as String?;
+
     try {
       final torrent = await transmission.addTorrent(magnetOrUrl);
+
+      // Store mapping if TMDB info provided
+      if (tmdbId != null && mediaType != null) {
+        await downloadMapping.addMapping(torrent.hashString, tmdbId, mediaType);
+        print('Mapped torrent ${torrent.hashString} -> $mediaType/$tmdbId');
+      }
+
       return _jsonOk({'torrent': torrent.toJson()});
     } on TransmissionException catch (e) {
       return _jsonError(500, e.message);
@@ -480,17 +501,31 @@ class ApiRoutes {
       final torrents = await transmission.getTorrents();
       if (torrents.isEmpty) return;
 
+      // Build hash -> torrent lookup for exact matching
+      final torrentByHash = {for (final t in torrents) t.hashString: t};
+
       for (final item in items) {
+        final tmdbId = item['id'] as int?;
+        final mediaType = item['mediaType'] as String?;
         final title = (item['title'] as String? ?? '');
+
+        // First try exact match via stored mapping
+        if (tmdbId != null && mediaType != null) {
+          final hash = downloadMapping.getTorrentHash(tmdbId, mediaType);
+          if (hash != null && torrentByHash.containsKey(hash)) {
+            final torrent = torrentByHash[hash]!;
+            item['percentDone'] = torrent.percentDone;
+            item['downloadStatus'] = torrent.statusText;
+            continue;
+          }
+        }
+
+        // Fall back to fuzzy title matching
         final year = item['year'] as String? ?? '';
         final normalizedTitle = _normalizeForMatch(title);
 
-        // Find a matching torrent by title (fuzzy match)
         for (final torrent in torrents) {
           final normalizedTorrent = _normalizeForMatch(torrent.name);
-
-          // Match if normalized torrent name contains normalized title
-          // and optionally the year for better accuracy
           final titleMatch = normalizedTorrent.contains(normalizedTitle);
           final yearMatch = year.isEmpty || normalizedTorrent.contains(year);
 
@@ -501,8 +536,9 @@ class ApiRoutes {
           }
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Transmission not available, skip progress info
+      print('Transmission error: $e');
     }
   }
 

@@ -59,12 +59,16 @@ class ApiService {
     List<String>? providers,
     String? type,
     int days = 30,
+    double? minRating,
+    int? minVotes,
   }) async {
     final params = <String, String>{
       'days': days.toString(),
       if (providers != null && providers.isNotEmpty)
         'providers': providers.join(','),
       if (type != null) 'type': type,
+      if (minRating != null) 'minRating': minRating.toString(),
+      if (minVotes != null) 'minVotes': minVotes.toString(),
     };
     final data = await _get('/api/new', params);
     return data['items'] as List<dynamic>;
@@ -123,8 +127,16 @@ class ApiService {
     return data['results'] as List<dynamic>;
   }
 
-  Future<Map<String, dynamic>> downloadTorrent(String url) async {
-    return await _post('/api/torrents/download', {'url': url});
+  Future<Map<String, dynamic>> downloadTorrent(
+    String url, {
+    int? tmdbId,
+    String? mediaType,
+  }) async {
+    return await _post('/api/torrents/download', {
+      'url': url,
+      if (tmdbId != null) 'tmdbId': tmdbId,
+      if (mediaType != null) 'mediaType': mediaType,
+    });
   }
 
   Future<List<dynamic>> getActiveTorrents() async {

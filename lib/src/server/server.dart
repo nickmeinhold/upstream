@@ -9,6 +9,7 @@ import '../services/transmission_client.dart';
 import '../services/jackett_client.dart';
 import '../services/omdb_client.dart';
 import '../services/user_service.dart';
+import '../services/download_mapping.dart';
 import '../watch_history.dart';
 import '../tmdb_client.dart';
 import 'routes.dart';
@@ -23,6 +24,7 @@ class UpstreamServer {
   late final OmdbClient? omdb;
   late final UserService userService;
   late final WatchHistory watchHistory;
+  late final DownloadMapping downloadMapping;
   late final String jwtSecret;
 
   UpstreamServer({
@@ -68,6 +70,9 @@ class UpstreamServer {
     watchHistory = WatchHistory();
     await watchHistory.load();
 
+    downloadMapping = DownloadMapping();
+    await downloadMapping.load();
+
     // Build router
     final apiRoutes = ApiRoutes(
       tmdb: tmdb,
@@ -76,6 +81,7 @@ class UpstreamServer {
       omdb: omdb,
       userService: userService,
       watchHistory: watchHistory,
+      downloadMapping: downloadMapping,
       jwtSecret: jwtSecret,
     );
 
