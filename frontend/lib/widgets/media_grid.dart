@@ -51,6 +51,9 @@ class MediaCard extends StatelessWidget {
     final posterUrl = item['posterUrl'] as String?;
     final mediaType = item['mediaType'] as String? ?? 'movie';
     final watched = item['watched'] as bool? ?? false;
+    final percentDone = (item['percentDone'] as num?)?.toDouble();
+    final isDownloading = percentDone != null && percentDone < 1.0;
+    final isDownloaded = percentDone != null && percentDone >= 1.0;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -158,10 +161,28 @@ class MediaCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Watched badge
-            if (watched)
+            // Downloaded badge
+            if (isDownloaded)
               Positioned(
                 top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.download_done,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            // Watched badge (show below downloaded if both)
+            if (watched)
+              Positioned(
+                top: isDownloaded ? 36 : 8,
                 right: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
@@ -174,6 +195,42 @@ class MediaCard extends StatelessWidget {
                     color: Colors.white,
                     size: 16,
                   ),
+                ),
+              ),
+            // Download progress indicator
+            if (isDownloading)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      color: Colors.black.withValues(alpha: 0.7),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.downloading, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${(percentDone * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    LinearProgressIndicator(
+                      value: percentDone,
+                      minHeight: 3,
+                      backgroundColor: Colors.black54,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  ],
                 ),
               ),
           ],

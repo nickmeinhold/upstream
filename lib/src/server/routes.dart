@@ -191,6 +191,9 @@ class ApiRoutes {
       return bDate.compareTo(aDate);
     });
 
+    // Add download progress for active torrents
+    await _addDownloadProgress(items);
+
     return _jsonOk({'items': items});
   }
 
@@ -221,6 +224,9 @@ class ApiRoutes {
       }
     }
 
+    // Add download progress for active torrents
+    await _addDownloadProgress(items);
+
     return _jsonOk({'items': items});
   }
 
@@ -237,6 +243,9 @@ class ApiRoutes {
               'watched': watchHistory.isWatched(user.id, r),
             })
         .toList();
+
+    // Add download progress for active torrents
+    await _addDownloadProgress(items);
 
     return _jsonOk({'items': items});
   }
@@ -454,5 +463,47 @@ class ApiRoutes {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  /// Match active torrents with media items and add progress info
+  Future<void> _addDownloadProgress(List<Map<String, dynamic>> items) async {
+    try {
+      final torrents = await transmission.getTorrents();
+      if (torrents.isEmpty) return;
+
+      for (final item in items) {
+        final title = (item['title'] as String? ?? '');
+        final year = item['year'] as String? ?? '';
+        final normalizedTitle = _normalizeForMatch(title);
+
+        // Find a matching torrent by title (fuzzy match)
+        for (final torrent in torrents) {
+          final normalizedTorrent = _normalizeForMatch(torrent.name);
+
+          // Match if normalized torrent name contains normalized title
+          // and optionally the year for better accuracy
+          final titleMatch = normalizedTorrent.contains(normalizedTitle);
+          final yearMatch = year.isEmpty || normalizedTorrent.contains(year);
+
+          if (titleMatch && yearMatch) {
+            item['percentDone'] = torrent.percentDone;
+            item['downloadStatus'] = torrent.statusText;
+            break;
+          }
+        }
+      }
+    } catch (_) {
+      // Transmission not available, skip progress info
+    }
+  }
+
+  /// Normalize a string for fuzzy matching (lowercase, remove punctuation, collapse spaces)
+  String _normalizeForMatch(String input) {
+    return input
+        .toLowerCase()
+        .replaceAll(RegExp(r'[._\-:]+'), ' ')  // Replace dots, underscores, dashes, colons with spaces
+        .replaceAll(RegExp(r'[^\w\s]'), '')     // Remove other punctuation
+        .replaceAll(RegExp(r'\s+'), ' ')        // Collapse multiple spaces
+        .trim();
   }
 }
