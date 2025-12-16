@@ -8,8 +8,8 @@ void main(List<String> arguments) async {
   String? staticPath;
   if (arguments.isNotEmpty) {
     staticPath = arguments.first;
-  } else if (await Directory('frontend/build/web').exists()) {
-    staticPath = 'frontend/build/web';
+  } else if (await Directory('../frontend/build/web').exists()) {
+    staticPath = '../frontend/build/web';
   }
 
   final server = UpstreamServer(

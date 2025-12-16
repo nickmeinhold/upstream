@@ -98,33 +98,17 @@ export PORT="8080"                               # Default
 ### 4. Build & Run
 
 ```bash
-# Backend
-dart pub get
+# Server
+cd server && dart pub get && cd ..
 
 # Frontend
-cd frontend && flutter pub get && flutter build web && cd ..
+cd frontend && flutter pub get && flutter build web --wasm && cd ..
 
-# Start
-dart run bin/server.dart
+# Start server (serves frontend automatically)
+cd server && dart run bin/server.dart
 ```
 
 Open <http://localhost:8080> — create an account and start browsing.
-
----
-
-## CLI Mode
-
-Prefer the terminal? The original CLI still works:
-
-```bash
-dart pub global activate --source path .
-
-upstream new                        # New releases (last 30 days)
-upstream new -p netflix -p disney   # Filter by provider
-upstream trending                   # What's hot this week
-upstream search "severance"         # Find something specific
-upstream where "The Bear"           # Where is it streaming?
-```
 
 ---
 
@@ -188,8 +172,31 @@ DELETE /api/torrents/{id}?deleteData=true
 All data is stored locally:
 
 ```text
-~/.upstream_users.json     # Accounts (passwords are hashed)
-~/.upstream_watched.json   # Per-user watch history
+~/.upstream_users.json              # Accounts (passwords are hashed)
+~/.upstream_watched.json            # Per-user watch history
+~/.upstream/download_mappings.json  # Torrent → TMDB ID mappings
+```
+
+---
+
+## Project Structure
+
+```text
+upstream/
+├── server/           # Dart backend
+│   ├── bin/server.dart
+│   ├── lib/src/
+│   │   ├── server/   # HTTP routes
+│   │   ├── services/ # API clients
+│   │   └── ...
+│   └── pubspec.yaml
+├── frontend/         # Flutter web app
+│   ├── lib/
+│   │   ├── screens/
+│   │   ├── widgets/
+│   │   └── services/
+│   └── pubspec.yaml
+└── README.md
 ```
 
 ---
@@ -198,7 +205,7 @@ All data is stored locally:
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Flutter Web |
+| Frontend | Flutter Web (WASM) |
 | Backend | Dart + shelf |
 | Auth | JWT (dart_jsonwebtoken) |
 | Content | TMDB API |
