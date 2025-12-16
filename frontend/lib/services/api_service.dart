@@ -9,10 +9,13 @@ class ApiService {
 
   String get _baseUrl => _auth.baseUrl;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (_auth.token != null) 'Authorization': 'Bearer ${_auth.token}',
-      };
+  Future<Map<String, String>> get _headers async {
+    final token = await _auth.getIdToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<Map<String, dynamic>> _get(String path,
       [Map<String, String>? params]) async {
@@ -21,7 +24,7 @@ class ApiService {
       uri = uri.replace(queryParameters: params);
     }
 
-    final response = await http.get(uri, headers: _headers);
+    final response = await http.get(uri, headers: await _headers);
     return _handleResponse(response);
   }
 
@@ -29,7 +32,7 @@ class ApiService {
       [Map<String, dynamic>? body]) async {
     final response = await http.post(
       Uri.parse('$_baseUrl$path'),
-      headers: _headers,
+      headers: await _headers,
       body: body != null ? jsonEncode(body) : null,
     );
     return _handleResponse(response);
@@ -42,7 +45,7 @@ class ApiService {
       uri = uri.replace(queryParameters: params);
     }
 
-    final response = await http.delete(uri, headers: _headers);
+    final response = await http.delete(uri, headers: await _headers);
     return _handleResponse(response);
   }
 

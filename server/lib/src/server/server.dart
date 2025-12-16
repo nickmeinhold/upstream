@@ -8,9 +8,9 @@ import 'package:shelf_static/shelf_static.dart';
 import '../services/transmission_client.dart';
 import '../services/jackett_client.dart';
 import '../services/omdb_client.dart';
-import '../services/user_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/firestore_watch_history.dart';
 import '../services/download_mapping.dart';
-import '../watch_history.dart';
 import '../tmdb_client.dart';
 import 'routes.dart';
 
@@ -22,10 +22,9 @@ class DownstreamServer {
   late final TransmissionClient transmission;
   late final JackettClient? jackett;
   late final OmdbClient? omdb;
-  late final UserService userService;
-  late final WatchHistory watchHistory;
+  late final FirebaseAuthService firebaseAuth;
+  late final FirestoreWatchHistory watchHistory;
   late final DownloadMapping downloadMapping;
-  late final String jwtSecret;
 
   DownstreamServer({
     this.port = 8080,
@@ -39,7 +38,16 @@ class DownstreamServer {
       throw Exception('TMDB_API_KEY environment variable required');
     }
 
-    jwtSecret = Platform.environment['JWT_SECRET'] ?? 'downstream-default-secret-change-me';
+    final firebaseProjectId = Platform.environment['FIREBASE_PROJECT_ID'];
+    if (firebaseProjectId == null || firebaseProjectId.isEmpty) {
+      throw Exception('FIREBASE_PROJECT_ID environment variable required');
+    }
+
+    final firebaseServiceAccount = Platform.environment['FIREBASE_SERVICE_ACCOUNT'];
+    if (firebaseServiceAccount == null || firebaseServiceAccount.isEmpty) {
+      throw Exception('FIREBASE_SERVICE_ACCOUNT environment variable required');
+    }
+
     final transmissionUrl = Platform.environment['TRANSMISSION_URL'] ?? 'http://localhost:9091';
     final jackettUrl = Platform.environment['JACKETT_URL'];
     final jackettKey = Platform.environment['JACKETT_API_KEY'];
@@ -64,11 +72,13 @@ class DownstreamServer {
       print('Warning: OMDB not configured (OMDB_API_KEY required for ratings)');
     }
 
-    userService = UserService();
-    await userService.load();
-
-    watchHistory = WatchHistory();
-    await watchHistory.load();
+    // Initialize Firebase services
+    firebaseAuth = FirebaseAuthService(projectId: firebaseProjectId);
+    watchHistory = await FirestoreWatchHistory.create(
+      projectId: firebaseProjectId,
+      serviceAccountJson: firebaseServiceAccount,
+    );
+    print('  Firebase: Configured (project: $firebaseProjectId)');
 
     downloadMapping = DownloadMapping();
     await downloadMapping.load();
@@ -79,10 +89,9 @@ class DownstreamServer {
       transmission: transmission,
       jackett: jackett,
       omdb: omdb,
-      userService: userService,
+      firebaseAuth: firebaseAuth,
       watchHistory: watchHistory,
       downloadMapping: downloadMapping,
-      jwtSecret: jwtSecret,
     );
 
     final router = Router();

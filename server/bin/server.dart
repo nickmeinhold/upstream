@@ -8,6 +8,8 @@ void main(List<String> arguments) async {
   String? staticPath;
   if (arguments.isNotEmpty) {
     staticPath = arguments.first;
+  } else if (Platform.environment['STATIC_PATH'] != null) {
+    staticPath = Platform.environment['STATIC_PATH'];
   } else if (await Directory('../frontend/build/web').exists()) {
     staticPath = '../frontend/build/web';
   }

@@ -1,108 +1,94 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService extends ChangeNotifier {
-  static const _tokenKey = 'auth_token';
-  static const _userKey = 'auth_user';
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Only create GoogleSignIn for non-web platforms
+  late final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
 
-  String? _token;
-  Map<String, dynamic>? _user;
+  User? _user;
   bool _isLoading = true;
+  String? _idToken;
 
-  String? get token => _token;
-  Map<String, dynamic>? get user => _user;
-  bool get isAuthenticated => _token != null;
+  User? get user => _user;
+  bool get isAuthenticated => _user != null;
   bool get isLoading => _isLoading;
-  String get username => _user?['username'] ?? '';
+  String get username => _user?.displayName ?? _user?.email ?? '';
+  String? get photoUrl => _user?.photoURL;
+  String? get email => _user?.email;
 
   String get baseUrl {
-    // In web, use relative URLs (same origin)
-    // For development, you might need to change this
-    if (kIsWeb) {
-      return '';
+    // For local development, always use localhost:8080
+    // In production (Cloud Run), use same origin
+    const isProduction = bool.fromEnvironment('dart.vm.product');
+    if (isProduction && kIsWeb) {
+      return ''; // Same origin in production
     }
     return 'http://localhost:8080';
   }
 
+  AuthService() {
+    // Listen to auth state changes
+    _auth.authStateChanges().listen((User? user) {
+      _user = user;
+      _isLoading = false;
+      _idToken = null; // Clear cached token on auth change
+      notifyListeners();
+    });
+  }
+
+  /// Get current ID token for API requests
+  Future<String?> getIdToken() async {
+    if (_user == null) return null;
+    // Get fresh token (Firebase caches and refreshes automatically)
+    _idToken = await _user!.getIdToken();
+    return _idToken;
+  }
+
+  /// Attempt to restore session (Firebase handles this automatically)
   Future<void> tryRestoreSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(_tokenKey);
-    final userJson = prefs.getString(_userKey);
-    if (userJson != null) {
-      _user = jsonDecode(userJson);
-    }
+    // Firebase Auth persists sessions automatically
+    // Just wait for the auth state to settle
+    await Future.delayed(const Duration(milliseconds: 500));
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> _saveSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_token != null) {
-      await prefs.setString(_tokenKey, _token!);
-    } else {
-      await prefs.remove(_tokenKey);
-    }
-    if (_user != null) {
-      await prefs.setString(_userKey, jsonEncode(_user));
-    } else {
-      await prefs.remove(_userKey);
-    }
-  }
-
-  Future<String?> login(String username, String password) async {
+  /// Sign in with Google
+  Future<String?> signInWithGoogle() async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _token = data['token'];
-        _user = data['user'];
-        await _saveSession();
-        notifyListeners();
-        return null;
+      if (kIsWeb) {
+        // Web flow - use popup
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        await _auth.signInWithPopup(googleProvider);
       } else {
-        final data = jsonDecode(response.body);
-        return data['error'] ?? 'Login failed';
+        // Mobile flow
+        final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
+        if (googleUser == null) {
+          return 'Sign in cancelled';
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        await _auth.signInWithCredential(credential);
       }
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? 'Authentication failed';
     } catch (e) {
-      return 'Connection error: $e';
+      return 'Sign in failed: $e';
     }
   }
 
-  Future<String?> register(String username, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _token = data['token'];
-        _user = data['user'];
-        await _saveSession();
-        notifyListeners();
-        return null;
-      } else {
-        final data = jsonDecode(response.body);
-        return data['error'] ?? 'Registration failed';
-      }
-    } catch (e) {
-      return 'Connection error: $e';
-    }
-  }
-
+  /// Sign out
   Future<void> logout() async {
-    _token = null;
-    _user = null;
-    await _saveSession();
-    notifyListeners();
+    await _googleSignIn?.signOut();
+    await _auth.signOut();
   }
 }

@@ -162,7 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => _showDownloadsPanel(context),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle),
+            icon: auth.photoUrl != null
+                ? CircleAvatar(
+                    backgroundImage: NetworkImage(auth.photoUrl!),
+                    radius: 16,
+                  )
+                : const Icon(Icons.account_circle),
             tooltip: auth.username,
             onSelected: (value) {
               if (value == 'logout') {
@@ -172,7 +177,30 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 enabled: false,
-                child: Text('Signed in as ${auth.username}'),
+                child: Row(
+                  children: [
+                    if (auth.photoUrl != null) ...[
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(auth.photoUrl!),
+                        radius: 20,
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(auth.username),
+                          if (auth.email != null)
+                            Text(
+                              auth.email!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'logout', child: Text('Sign out')),
@@ -250,50 +278,59 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 8),
             FilledButton(onPressed: _loadContent, child: const Text('Search')),
           ] else ...[
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'all', label: Text('All')),
-                ButtonSegment(value: 'movie', label: Text('Movies')),
-                ButtonSegment(value: 'tv', label: Text('TV Shows')),
-              ],
-              selected: {_contentType},
-              onSelectionChanged: (selection) {
-                setState(() => _contentType = selection.first);
-                _loadContent();
-              },
+            Flexible(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'all', label: Text('All')),
+                        ButtonSegment(value: 'movie', label: Text('Movies')),
+                        ButtonSegment(value: 'tv', label: Text('TV Shows')),
+                      ],
+                      selected: {_contentType},
+                      onSelectionChanged: (selection) {
+                        setState(() => _contentType = selection.first);
+                        _loadContent();
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                    if (_selectedIndex == 0)
+                      DropdownButton<int>(
+                        value: _days,
+                        items: const [
+                          DropdownMenuItem(value: 7, child: Text('Last 7 days')),
+                          DropdownMenuItem(value: 14, child: Text('Last 14 days')),
+                          DropdownMenuItem(value: 30, child: Text('Last 30 days')),
+                          DropdownMenuItem(value: 90, child: Text('Last 90 days')),
+                          DropdownMenuItem(value: 180, child: Text('Last 6 months')),
+                          DropdownMenuItem(value: 365, child: Text('Last year')),
+                          DropdownMenuItem(value: 730, child: Text('Last 2 years')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _days = value);
+                            _loadContent();
+                          }
+                        },
+                      ),
+                    if (_selectedIndex == 1)
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'day', label: Text('Today')),
+                          ButtonSegment(value: 'week', label: Text('This Week')),
+                        ],
+                        selected: {_timeWindow},
+                        onSelectionChanged: (selection) {
+                          setState(() => _timeWindow = selection.first);
+                          _loadContent();
+                        },
+                      ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
-            if (_selectedIndex == 0)
-              DropdownButton<int>(
-                value: _days,
-                items: const [
-                  DropdownMenuItem(value: 7, child: Text('Last 7 days')),
-                  DropdownMenuItem(value: 14, child: Text('Last 14 days')),
-                  DropdownMenuItem(value: 30, child: Text('Last 30 days')),
-                  DropdownMenuItem(value: 90, child: Text('Last 90 days')),
-                  DropdownMenuItem(value: 180, child: Text('Last 6 months')),
-                  DropdownMenuItem(value: 365, child: Text('Last year')),
-                  DropdownMenuItem(value: 730, child: Text('Last 2 years')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _days = value);
-                    _loadContent();
-                  }
-                },
-              ),
-            if (_selectedIndex == 1)
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'day', label: Text('Today')),
-                  ButtonSegment(value: 'week', label: Text('This Week')),
-                ],
-                selected: {_timeWindow},
-                onSelectionChanged: (selection) {
-                  setState(() => _timeWindow = selection.first);
-                  _loadContent();
-                },
-              ),
           ],
           const Spacer(),
           if (_selectedIndex == 0)
