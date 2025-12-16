@@ -156,31 +156,42 @@ class ApiRoutes {
 
     final items = <Map<String, dynamic>>[];
 
+    // Fetch multiple pages for more results (TMDB returns 20 per page)
+    const pagesToFetch = 5;
+
     if (type == null || type == 'movie') {
-      final movies = await tmdb.discoverMovies(
-        providerIds: providerIds,
-        releaseDateGte: startStr,
-        releaseDateLte: endStr,
-      );
-      for (final m in movies) {
-        items.add({
-          ...m.toJson(),
-          'watched': watchHistory.isWatched(user.id, m),
-        });
+      for (var page = 1; page <= pagesToFetch; page++) {
+        final movies = await tmdb.discoverMovies(
+          providerIds: providerIds,
+          releaseDateGte: startStr,
+          releaseDateLte: endStr,
+          page: page,
+        );
+        if (movies.isEmpty) break; // No more results
+        for (final m in movies) {
+          items.add({
+            ...m.toJson(),
+            'watched': watchHistory.isWatched(user.id, m),
+          });
+        }
       }
     }
 
     if (type == null || type == 'tv') {
-      final tv = await tmdb.discoverTv(
-        providerIds: providerIds,
-        airDateGte: startStr,
-        airDateLte: endStr,
-      );
-      for (final t in tv) {
-        items.add({
-          ...t.toJson(),
-          'watched': watchHistory.isWatched(user.id, t),
-        });
+      for (var page = 1; page <= pagesToFetch; page++) {
+        final tv = await tmdb.discoverTv(
+          providerIds: providerIds,
+          airDateGte: startStr,
+          airDateLte: endStr,
+          page: page,
+        );
+        if (tv.isEmpty) break; // No more results
+        for (final t in tv) {
+          items.add({
+            ...t.toJson(),
+            'watched': watchHistory.isWatched(user.id, t),
+          });
+        }
       }
     }
 
