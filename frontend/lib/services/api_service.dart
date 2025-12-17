@@ -64,6 +64,7 @@ class ApiService {
     int days = 30,
     double? minRating,
     int? minVotes,
+    int? genre,
   }) async {
     final params = <String, String>{
       'days': days.toString(),
@@ -72,6 +73,7 @@ class ApiService {
       if (type != null) 'type': type,
       if (minRating != null) 'minRating': minRating.toString(),
       if (minVotes != null) 'minVotes': minVotes.toString(),
+      if (genre != null) 'genre': genre.toString(),
     };
     final data = await _get('/api/new', params);
     return data['items'] as List<dynamic>;

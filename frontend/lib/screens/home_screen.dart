@@ -21,11 +21,30 @@ class _HomeScreenState extends State<HomeScreen> {
   int _days = 30;
   double _minRating = 6.0; // Default: filter out low-rated content
   int _minVotes = 50; // Default: filter out obscure content
+  int? _selectedGenre; // null = all genres
   List<dynamic> _items = [];
   bool _isLoading = false;
   String? _error;
   final _searchController = TextEditingController();
   Timer? _progressTimer;
+
+  // Common genres (shared between movies and TV)
+  static const _genres = <int, String>{
+    28: 'Action',
+    12: 'Adventure',
+    16: 'Animation',
+    35: 'Comedy',
+    80: 'Crime',
+    99: 'Documentary',
+    18: 'Drama',
+    10751: 'Family',
+    14: 'Fantasy',
+    27: 'Horror',
+    9648: 'Mystery',
+    10749: 'Romance',
+    878: 'Sci-Fi',
+    53: 'Thriller',
+  };
 
   @override
   void initState() {
@@ -105,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
             days: _days,
             minRating: _minRating,
             minVotes: _minVotes,
+            genre: _selectedGenre,
           );
           break;
         case 1: // Trending
@@ -296,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                     const SizedBox(width: 16),
-                    if (_selectedIndex == 0)
+                    if (_selectedIndex == 0) ...[
                       DropdownButton<int>(
                         value: _days,
                         items: const [
@@ -315,6 +335,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         },
                       ),
+                      const SizedBox(width: 16),
+                      DropdownButton<int?>(
+                        value: _selectedGenre,
+                        hint: const Text('All Genres'),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text('All Genres'),
+                          ),
+                          ..._genres.entries.map((e) => DropdownMenuItem<int?>(
+                                value: e.key,
+                                child: Text(e.value),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedGenre = value);
+                          _loadContent();
+                        },
+                      ),
+                    ],
                     if (_selectedIndex == 1)
                       SegmentedButton<String>(
                         segments: const [

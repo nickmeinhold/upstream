@@ -92,6 +92,7 @@ class ApiRoutes {
     // Rating filters - defaults filter out low quality content
     final minRating = double.tryParse(params['minRating'] ?? '6.0');
     final minVotes = int.tryParse(params['minVotes'] ?? '50');
+    final genreId = int.tryParse(params['genre'] ?? '');
 
     // Only filter by provider if explicitly specified - otherwise get all releases
     final providerIds = providerKeys.isNotEmpty
@@ -118,6 +119,7 @@ class ApiRoutes {
           releaseDateLte: endStr,
           minRating: minRating,
           minVotes: minVotes,
+          genreId: genreId,
           page: page,
         );
         if (movies.isEmpty) break; // No more results
@@ -138,6 +140,7 @@ class ApiRoutes {
           airDateLte: endStr,
           minRating: minRating,
           minVotes: minVotes,
+          genreId: genreId,
           page: page,
         );
         if (tv.isEmpty) break; // No more results
