@@ -4,31 +4,15 @@ import 'package:http/http.dart' as http;
 class JackettClient {
   final String baseUrl;
   final String apiKey;
-  String? _sessionCookie;
 
   JackettClient({
     this.baseUrl = 'http://localhost:9117',
     required this.apiKey,
   });
 
-  /// Initialize session by hitting the homepage to get a session cookie
-  Future<void> _ensureSession() async {
-    if (_sessionCookie != null) return;
-
-    final response = await http.get(Uri.parse('$baseUrl/UI/Login'));
-    final setCookie = response.headers['set-cookie'];
-    if (setCookie != null) {
-      // Extract just the cookie name=value part
-      _sessionCookie = setCookie.split(';').first;
-    }
-  }
-
-  /// Make a GET request with session cookie
+  /// Make a GET request to Jackett API
   Future<http.Response> _get(Uri uri) async {
-    await _ensureSession();
-    return http.get(uri, headers: {
-      if (_sessionCookie != null) 'Cookie': _sessionCookie!,
-    });
+    return http.get(uri);
   }
 
   /// Search all configured indexers for torrents
@@ -74,7 +58,8 @@ class JackettClient {
     final response = await _get(uri);
 
     if (response.statusCode != 200) {
-      throw JackettException('Failed to get indexers: ${response.statusCode}');
+      throw JackettException(
+          'Failed to get indexers: ${response.statusCode} - ${response.body}');
     }
 
     final data = jsonDecode(response.body) as List<dynamic>;
@@ -83,12 +68,19 @@ class JackettClient {
         .toList();
   }
 
-  /// Test connection to Jackett
+  /// Test connection to Jackett by doing a quick search
   Future<bool> testConnection() async {
     try {
-      await getIndexers();
-      return true;
-    } catch (_) {
+      // Test with the actual search endpoint we use
+      final params = {'apikey': apiKey, 'Query': 'test'};
+      final uri = Uri.parse('$baseUrl/api/v2.0/indexers/all/results')
+          .replace(queryParameters: params);
+      final response = await http.get(uri).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => http.Response('Timeout', 408),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
       return false;
     }
   }
