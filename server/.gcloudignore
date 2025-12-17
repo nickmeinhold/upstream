@@ -1,0 +1,9 @@
+# Exclude dart build artifacts
+.dart_tool/
+build/
+.packages
+
+# Exclude env file with secrets
+.env
+
+# Do NOT exclude static/ - we need it for the web app

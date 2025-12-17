@@ -50,23 +50,24 @@ gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
 cd ..
 
 # Step 4: Deploy to Cloud Run
-# Note: Using a secrets file approach for the service account JSON
 echo ""
 echo "4. Deploying to Cloud Run..."
 
-# Write service account to a temp file for gcloud (handles special chars)
-echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa.json
+# Create env vars YAML file (handles JSON with special chars)
+cat > /tmp/env.yaml << ENVEOF
+TMDB_API_KEY: "$TMDB_API_KEY"
+FIREBASE_PROJECT_ID: "$PROJECT_ID"
+FIREBASE_SERVICE_ACCOUNT: '$FIREBASE_SERVICE_ACCOUNT'
+ENVEOF
 
 gcloud run deploy $SERVICE_NAME \
   --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --set-env-vars "TMDB_API_KEY=$TMDB_API_KEY" \
-  --set-env-vars "FIREBASE_PROJECT_ID=$PROJECT_ID" \
-  --set-env-vars "^@^FIREBASE_SERVICE_ACCOUNT=$(cat /tmp/sa.json)"
+  --env-vars-file /tmp/env.yaml
 
-rm /tmp/sa.json
+rm /tmp/env.yaml
 
 echo ""
 echo "=== Deployment complete! ==="

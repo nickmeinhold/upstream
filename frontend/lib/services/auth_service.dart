@@ -29,6 +29,15 @@ class AuthService extends ChangeNotifier {
   }
 
   AuthService() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    // Set persistence to LOCAL (survives browser restarts)
+    if (kIsWeb) {
+      await _auth.setPersistence(Persistence.LOCAL);
+    }
+
     // Listen to auth state changes
     _auth.authStateChanges().listen((User? user) {
       _user = user;
@@ -62,6 +71,7 @@ class AuthService extends ChangeNotifier {
         // Web flow - use popup
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
         await _auth.signInWithPopup(googleProvider);
+        return null;
       } else {
         // Mobile flow
         final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
