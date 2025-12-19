@@ -87,8 +87,10 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
 
       _watched = !_watched;
       widget.item['watched'] = _watched;
-      setState(() => _isUpdating = false);
       widget.onWatchedChanged();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       setState(() => _isUpdating = false);
       if (mounted) {
