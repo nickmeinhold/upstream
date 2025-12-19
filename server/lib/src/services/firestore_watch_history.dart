@@ -44,10 +44,9 @@ class FirestoreWatchHistory {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final documents = data['documents'] as List<dynamic>? ?? [];
-
     return documents.map((doc) {
       final name = doc['name'] as String;
-      return name.split('/').last; // Extract document ID (the media key)
+      return name.split('/').last;
     }).toSet();
   }
 
@@ -164,10 +163,9 @@ class FirestoreWatchHistory {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final documents = data['documents'] as List<dynamic>? ?? [];
-
     return documents.map((doc) {
       final name = doc['name'] as String;
-      return name.split('/').last; // Extract document ID (the media key)
+      return name.split('/').last;
     }).toSet();
   }
 

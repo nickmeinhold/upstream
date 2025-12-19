@@ -51,6 +51,7 @@ class MediaCard extends StatelessWidget {
     final posterUrl = item['posterUrl'] as String?;
     final mediaType = item['mediaType'] as String? ?? 'movie';
     final watched = item['watched'] as bool? ?? false;
+    final requested = item['requested'] as bool? ?? false;
     final percentDone = (item['percentDone'] as num?)?.toDouble();
     final genres = (item['genres'] as List<dynamic>?)?.cast<String>() ?? [];
     final genreText = genres.take(2).join(' · ');
@@ -206,6 +207,24 @@ class MediaCard extends StatelessWidget {
                   ),
                   child: const Icon(
                     Icons.check,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            // Requested badge (show below other badges)
+            if (requested)
+              Positioned(
+                top: isDownloaded || watched ? (isDownloaded && watched ? 64 : 36) : 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.bookmark,
                     color: Colors.white,
                     size: 16,
                   ),
