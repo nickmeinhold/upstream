@@ -85,10 +85,9 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
         await api.markWatched(mediaType, id);
       }
 
-      setState(() {
-        _watched = !_watched;
-        _isUpdating = false;
-      });
+      _watched = !_watched;
+      widget.item['watched'] = _watched;
+      setState(() => _isUpdating = false);
       widget.onWatchedChanged();
     } catch (e) {
       setState(() => _isUpdating = false);
@@ -117,12 +116,10 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
         posterPath: posterPath,
       );
 
-      setState(() {
-        _isRequesting = false;
-        _requested = true;
-      });
-
+      widget.item['requested'] = true;
+      widget.onWatchedChanged();
       if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Requested "$title"')),
         );
@@ -159,12 +156,10 @@ class _MediaDetailDialogState extends State<MediaDetailDialog> {
 
       await api.deleteRequest(mediaType, id);
 
-      setState(() {
-        _isRequesting = false;
-        _requested = false;
-      });
-
+      widget.item['requested'] = false;
+      widget.onWatchedChanged();
       if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Removed request for "$title"')),
         );

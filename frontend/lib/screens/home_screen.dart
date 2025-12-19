@@ -112,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) =>
-          MediaDetailDialog(item: item, onWatchedChanged: () => _loadContent()),
+          MediaDetailDialog(item: item, onWatchedChanged: () => setState(() {})),
     );
   }
 
