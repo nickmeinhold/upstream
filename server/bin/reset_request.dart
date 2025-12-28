@@ -32,16 +32,26 @@ void main(List<String> args) async {
   final newStatus = args.length > 1 ? args[1] : 'pending';
 
   try {
-    await firestore.projects.databases.documents.patch(
-      Document(
-        fields: {
-          'status': Value(stringValue: newStatus),
-        },
-      ),
-      docPath,
-      updateMask_fieldPaths: ['status'],
-    );
-    print('Set $mediaKey to $newStatus');
+    if (args.contains('--delete')) {
+      await firestore.projects.databases.documents.delete(docPath);
+      print('Deleted $mediaKey');
+    } else {
+      final clearError = args.contains('--clear-error');
+      final fieldPaths = ['status'];
+      final fields = <String, Value>{
+        'status': Value(stringValue: newStatus),
+      };
+      if (clearError) {
+        fieldPaths.add('errorMessage');
+        fields['errorMessage'] = Value(nullValue: 'NULL_VALUE');
+      }
+      await firestore.projects.databases.documents.patch(
+        Document(fields: fields),
+        docPath,
+        updateMask_fieldPaths: fieldPaths,
+      );
+      print('Set $mediaKey to $newStatus${clearError ? ' (cleared error)' : ''}');
+    }
   } catch (e) {
     print('Error: $e');
   }

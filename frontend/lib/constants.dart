@@ -5,6 +5,7 @@
 /// See SCHEMA.md for status transition diagram
 class RequestStatus {
   static const pending = 'pending';
+  static const downloaded = 'downloaded'; // Ready for transcoding (skips search/download)
   static const downloading = 'downloading';
   static const transcoding = 'transcoding';
   static const uploading = 'uploading';
@@ -21,6 +22,10 @@ class RequestStatus {
   /// Check if a status indicates the request is complete (success or failure)
   static bool isComplete(String status) =>
       status == available || status == failed;
+
+  /// Check if a status indicates the request needs to be picked up
+  static bool needsPickup(String status) =>
+      status == pending || status == downloaded;
 }
 
 /// Media type values

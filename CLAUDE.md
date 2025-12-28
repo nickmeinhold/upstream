@@ -11,7 +11,8 @@ Downstream is a self-hosted web app for discovering new streaming content. Users
 
 ## Related Projects
 
-**downstream-cli** (https://github.com/nickmeinhold/downstream-cli) handles the downloading workflow:
+**downstream-cli** (<https://github.com/nickmeinhold/downstream-cli>) handles the downloading workflow:
+
 - Monitors Firestore via gRPC real-time listener for pending requests
 - Uses Jackett to search for torrents
 - Manages downloads via Transmission
@@ -20,7 +21,7 @@ Downstream is a self-hosted web app for discovering new streaming content. Users
 
 ## How They Relate
 
-```
+```text
 User browses in downstream-web
          ↓
 Clicks "Request for Download"
@@ -39,12 +40,14 @@ Updates Firestore status → reflected in web app
 See [SCHEMA.md](SCHEMA.md) for the Firestore schema shared between this project and downstream-cli.
 
 Status constants are defined in:
+
 - `server/lib/src/constants.dart`
 - `frontend/lib/constants.dart`
 
 ## Environment Variables
 
 Server requires (in `server/.env`):
+
 - `TMDB_API_KEY` - Content discovery
 - `FIREBASE_PROJECT_ID` - Auth and Firestore
 - `FIREBASE_SERVICE_ACCOUNT` - Service account JSON (inline or path)

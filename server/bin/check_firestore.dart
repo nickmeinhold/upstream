@@ -37,6 +37,16 @@ void main() async {
         print('Type: ${fields['mediaType']?.stringValue ?? 'N/A'}');
         print('TMDB ID: ${fields['tmdbId']?.integerValue ?? 'N/A'}');
         print('Status: ${fields['status']?.stringValue ?? 'N/A'}');
+        final error = fields['errorMessage']?.stringValue;
+        if (error != null) print('Error: $error');
+        final dlProgress = fields['downloadProgress']?.doubleValue;
+        if (dlProgress != null) print('Download Progress: ${(dlProgress * 100).toStringAsFixed(1)}%');
+        final tcProgress = fields['transcodingProgress']?.doubleValue;
+        if (tcProgress != null) print('Transcode Progress: ${(tcProgress * 100).toStringAsFixed(1)}%');
+        final upProgress = fields['uploadProgress']?.doubleValue;
+        if (upProgress != null) print('Upload Progress: ${(upProgress * 100).toStringAsFixed(1)}%');
+        final storagePath = fields['storagePath']?.stringValue;
+        if (storagePath != null) print('Storage Path: $storagePath');
         print('Requested By: ${fields['requestedBy']?.stringValue ?? 'N/A'}');
         print('Requested At: ${fields['requestedAt']?.timestampValue ?? 'N/A'}');
         print('---');
