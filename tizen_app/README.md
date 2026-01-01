@@ -128,3 +128,8 @@ This app shares most of its code with the WebOS app at `../webos_app/`. Key diff
 - [ ] Configure Tizen SDK packages (tizen-core)
 - [ ] Test on physical Samsung TV
 - [ ] Add TV-specific remote key handling
+
+## Related Projects
+
+- **[downstream-server](https://github.com/nickmeinhold/downstream-server)**: Backend API for TMDB and request management
+- **[downstream-cli](https://github.com/nickmeinhold/downstream-cli)**: Download, transcode, and upload workflow

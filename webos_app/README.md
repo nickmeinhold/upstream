@@ -150,5 +150,5 @@ webos_app/
 
 ## Related Projects
 
-- **downstream-cli**: Handles download, transcode, and upload workflow
-- **downstream-web/server**: Backend API for TMDB and request management
+- **[downstream-server](https://github.com/nickmeinhold/downstream-server)**: Backend API for TMDB and request management
+- **[downstream-cli](https://github.com/nickmeinhold/downstream-cli)**: Download, transcode, and upload workflow
