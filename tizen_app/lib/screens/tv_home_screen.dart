@@ -73,50 +73,62 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
-          Text(
-            'Downstream',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+          Flexible(
+            child: Text(
+              'Downstream',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(width: 48),
-          _TabButton(
-            label: 'Library',
-            icon: Icons.video_library,
-            isSelected: _selectedTab == 0,
-            onTap: () => setState(() => _selectedTab = 0),
-            autofocus: true,
+          const SizedBox(width: 24),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _TabButton(
+                    label: 'Library',
+                    icon: Icons.video_library,
+                    isSelected: _selectedTab == 0,
+                    onTap: () => setState(() => _selectedTab = 0),
+                    autofocus: true,
+                  ),
+                  const SizedBox(width: 8),
+                  _TabButton(
+                    label: 'New',
+                    icon: Icons.new_releases,
+                    isSelected: _selectedTab == 1,
+                    onTap: () => setState(() => _selectedTab = 1),
+                  ),
+                  const SizedBox(width: 8),
+                  _TabButton(
+                    label: 'Trending',
+                    icon: Icons.trending_up,
+                    isSelected: _selectedTab == 2,
+                    onTap: () => setState(() => _selectedTab = 2),
+                  ),
+                  const SizedBox(width: 8),
+                  _TabButton(
+                    label: 'Search',
+                    icon: Icons.search,
+                    isSelected: _selectedTab == 3,
+                    onTap: () => setState(() => _selectedTab = 3),
+                  ),
+                  const SizedBox(width: 8),
+                  _TabButton(
+                    label: 'Queue',
+                    icon: Icons.download,
+                    isSelected: _selectedTab == 4,
+                    onTap: () => setState(() => _selectedTab = 4),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
-          _TabButton(
-            label: 'New',
-            icon: Icons.new_releases,
-            isSelected: _selectedTab == 1,
-            onTap: () => setState(() => _selectedTab = 1),
-          ),
-          const SizedBox(width: 8),
-          _TabButton(
-            label: 'Trending',
-            icon: Icons.trending_up,
-            isSelected: _selectedTab == 2,
-            onTap: () => setState(() => _selectedTab = 2),
-          ),
-          const SizedBox(width: 8),
-          _TabButton(
-            label: 'Search',
-            icon: Icons.search,
-            isSelected: _selectedTab == 3,
-            onTap: () => setState(() => _selectedTab = 3),
-          ),
-          const SizedBox(width: 8),
-          _TabButton(
-            label: 'Queue',
-            icon: Icons.download,
-            isSelected: _selectedTab == 4,
-            onTap: () => setState(() => _selectedTab = 4),
-          ),
-          const Spacer(),
+          const SizedBox(width: 16),
           if (auth.photoUrl != null)
             CircleAvatar(
               backgroundImage: NetworkImage(auth.photoUrl!),
