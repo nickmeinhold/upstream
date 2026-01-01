@@ -52,3 +52,7 @@ logs/
 # Symbolication/Obfuscation (Flutter builds)
 app.*.symbols
 app.*.map.json
+
+# TV platform build artifacts
+*.ipk
+*.tpk
