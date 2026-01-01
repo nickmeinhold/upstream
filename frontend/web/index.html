@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <!-- Use ./ for WebOS file:// protocol compatibility -->
+  <base href="./">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -19,7 +20,7 @@
   <title>Downstream</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body tabindex="0">
   <!-- Firebase SDK - load before Flutter -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
@@ -36,6 +37,38 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
+
+  <!-- TV Remote D-Pad Support -->
+  <script>
+    // Ensure Flutter canvas gets focus for keyboard input
+    window.addEventListener('load', function() {
+      // Wait for Flutter to initialize
+      setTimeout(function() {
+        var glassPane = document.querySelector('flt-glass-pane');
+        if (glassPane) {
+          glassPane.setAttribute('tabindex', '0');
+          glassPane.focus();
+        }
+      }, 1000);
+    });
+
+    // Re-focus Flutter canvas when clicking anywhere
+    document.addEventListener('click', function() {
+      var glassPane = document.querySelector('flt-glass-pane');
+      if (glassPane) {
+        glassPane.focus();
+      }
+    });
+
+    // Prevent default browser behavior for arrow keys and back button
+    document.addEventListener('keydown', function(e) {
+      // Arrow keys, Enter, Space, Back
+      if ([37, 38, 39, 40, 13, 32, 461, 10009, 8].includes(e.keyCode)) {
+        e.preventDefault();
+      }
+    });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
